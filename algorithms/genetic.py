@@ -1,16 +1,45 @@
-def genetic_algorithm(config, minimize=True):
-    population = initialize_population(config.population_size)
-    best_solution = None
-    for _ in range(config.num_epochs):
-        population = evaluate_fitness(population, minimize)
+from configuration import config
+from selection_methods import best_selection, roulette_selection, tournament_selection
+from cross_methods import single_point_crossover, two_point_crossover
+from mutation import single_point_mutation, two_point_mutation, edge_mutation
+from inversion import inversion
+from fitness_functions import evaluate_fitness
+
+def run_genetic_algorithm():
+    population = [Chromosome(config.num_variables) for _ in range(config.population_size)]
+
+    for epoch in range(config.epochs):
+        fitness_values = [evaluate_fitness(ind) for ind in population]
+
+        if config.selection_method == "best":
+            selected_population = best_selection(population, fitness_values, config.best_selection_amount)
+        elif config.selection_method == "roulette":
+            selected_population = roulette_selection(population, fitness_values)
+        elif config.selection_method == "tournament":
+            selected_population = tournament_selection(population, fitness_values, config.tournament_size)
+
         new_population = []
-        if config.elitism:
-            best_solution = min(population, key=lambda x: x.fitness) if minimize else max(population, key=lambda x: x.fitness)
-            new_population.append(best_solution)
-        while len(new_population) < config.population_size:
-            parent1, parent2 = select_parents(population)
-            child1, child2 = crossover(parent1, parent2)
-            mutate(child1)
-            mutate(child2)
-            new_population.extend([child1, child2])
-        population = new_population[:config.population_size]
+        for i in range(0, len(selected_population), 2):
+            if random.random() <= config.crossover_probability:
+                if config.crossover_method == "one_point":
+                    child1, child2 = single_point_crossover(selected_population[i], selected_population[i+1])
+                elif config.crossover_method == "two_point":
+                    child1, child2 = two_point_crossover(selected_population[i], selected_population[i+1])
+                new_population.extend([Chromosome(config.num_variables, False) for _ in (child1, child2)])
+            else:
+                new_population.extend([selected_population[i], selected_population[i+1]])
+
+        for individual in new_population:
+            if random.random() <= config.mutation_probability:
+                if config.mutation_method == "one_point":
+                    single_point_mutation(individual)
+                elif config.mutation_method == "two_point":
+                    two_point_mutation(individual)
+                elif config.mutation_method == "edge":
+                    edge_mutation(individual)
+
+            inversion(individual, config.inversion_probability)
+
+        population = new_population
+
+    return min(population, key=evaluate_fitness)  # Minimalizacja
