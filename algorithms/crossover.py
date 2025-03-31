@@ -1,30 +1,40 @@
-import numpy as np
 import random
 
 def single_point_crossover(parent1, parent2):
-    crossover_point = random.randint(1, len(parent1) - 1)
-    child1 = np.concatenate((parent1[:crossover_point], parent2[crossover_point:]))
-    child2 = np.concatenate((parent2[:crossover_point], parent1[crossover_point:]))
+    if parent1 is None or parent2 is None:
+        print("Ostrzeżenie: Jeden z rodziców jest None")
+        return None, None
+        
+    point = random.randint(1, len(parent1) - 1)
+    child1 = parent1[:point] + parent2[point:]
+    child2 = parent2[:point] + parent1[point:]
     return child1, child2
 
-
-def two_point_crossover(self, parent1, parent2):
-    points = sorted(random.sample(range(1, self.num_variables), 2))
-    p1, p2 = points
-    child1 = np.concatenate((parent1[:p1], parent2[p1:p2], parent1[p2:]))
-    child2 = np.concatenate((parent2[:p1], parent1[p1:p2], parent2[p2:]))
+def two_point_crossover(parent1, parent2):
+    if parent1 is None or parent2 is None:
+        print("Ostrzeżenie: Jeden z rodziców jest None")
+        return None, None
+        
+    length = len(parent1)
+    point1 = random.randint(1, length - 2)
+    point2 = random.randint(point1 + 1, length - 1)
+    
+    child1 = parent1[:point1] + parent2[point1:point2] + parent1[point2:]
+    child2 = parent2[:point1] + parent1[point1:point2] + parent2[point2:]
     return child1, child2
 
-
-def uniform_crossover(self, parent1, parent2):
-    mask = np.random.rand(self.num_variables) < 0.5
-    child1 = np.where(mask, parent1, parent2)
-    child2 = np.where(mask, parent2, parent1)
-    return child1, child2
-
-
-def granular_crossover(self, parent1, parent2):
-    alpha = np.random.rand(self.num_variables)
-    child1 = alpha * parent1 + (1 - alpha) * parent2
-    child2 = (1 - alpha) * parent1 + alpha * parent2
+def uniform_crossover(parent1, parent2):
+    if parent1 is None or parent2 is None:
+        print("Ostrzeżenie: Jeden z rodziców jest None")
+        return None, None
+        
+    child1 = []
+    child2 = []
+    for i in range(len(parent1)):
+        if random.random() < 0.5:
+            child1.append(parent1[i])
+            child2.append(parent2[i])
+        else:
+            child1.append(parent2[i])
+            child2.append(parent1[i])
     return child1, child2

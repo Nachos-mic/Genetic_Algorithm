@@ -1,5 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
+from algorithms.config import config 
+from algorithms.genetic import run_genetic_algorithm
+
 
 
 class Singleton:
@@ -15,11 +19,11 @@ class MainWindow(Singleton):
         super().__init__(*args, **kwargs)
         self.root = tk.Tk()
         self.root.title("Genetic Algorithm")
-        self.root.geometry("300x350")
+        self.root.geometry("300x375")
 
-        self.selection_methods = ["Roulette", "Tournament", "Random"]
-        self.cross_methods = ["Single-point", "Multi-point", "Uniform"]
-        self.mutation_methods = ["Random", "Inversion", "Swap"]
+        self.selection_methods = ["Best", "Roulette", "Tournament"]
+        self.cross_methods = ["One-point", "Two-point", "Uniform"]
+        self.mutation_methods = ["One-point", "Two-point", "Edge"]
 
         main_column = tk.Frame(self.root)
         main_column.pack(padx=10, pady=10)
@@ -35,6 +39,12 @@ class MainWindow(Singleton):
         tk.Label(row2, text="Ending Range").pack(side="left")
         self.range_end_entry = tk.Entry(row2, width=10)
         self.range_end_entry.pack(side="left")
+
+        rowEpoch = tk.Frame(main_column)
+        rowEpoch.pack(fill="x")
+        tk.Label(rowEpoch, text="Epochs").pack(side="left")
+        self.epochs_entry = tk.Entry(rowEpoch, width=10)
+        self.epochs_entry.pack(side="left")
 
         row3 = tk.Frame(main_column)
         row3.pack(fill="x")
@@ -115,5 +125,48 @@ class MainWindow(Singleton):
         self.maximization_checkbox = tk.Checkbutton(row14, variable=self.maximization_var)
         self.maximization_checkbox.pack(side="left")
 
-        self.start_button = tk.Button(main_column, text="Start")
+        self.start_button = tk.Button(main_column, text="Start", command=self.run_algorithm)
         self.start_button.pack(fill="x")
+
+    
+    def save_results_to_file(self, results):
+        """Zapisuje wyniki do pliku tekstowego."""
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        if file_path:
+            try:
+                with open(file_path, 'w') as file:
+                    file.write(results)
+                print(f"Wyniki zapisano w: {file_path}")
+            except Exception as e:
+                print(f"Błąd podczas zapisu: {str(e)}")
+
+    def run_algorithm(self):
+        try:
+            from algorithms.config import config
+            
+            config.range_start = float(self.range_start_entry.get())
+            config.range_end = float(self.range_end_entry.get())
+            config.epochs = int(self.epochs_entry.get())
+            config.population_size = int(self.population_amount_entry.get())
+            config.precision = int(self.precision_entry.get())
+            config.num_variables = int(self.variables_num_entry.get())
+            config.selection_method = self.select_method_var.get().lower()
+            config.best_selection_amount = int(self.best_amount_entry.get())
+            config.tournament_size = int(self.selection_size_entry.get())
+            config.crossover_method = self.cross_method_var.get().replace("-", "_").lower()
+            config.crossover_probability = float(self.cross_propability_entry.get())
+            config.mutation_method = self.mutation_method_var.get().lower()
+            config.mutation_probability = float(self.mutation_propability_entry.get())
+            config.inversion_probability = float(self.inversion_propability_entry.get())
+            config.optimization_type = "max" if self.maximization_var.get() else "min"
+            
+            best_solution, execution_time = run_genetic_algorithm()
+            
+            results = f"Najlepsze rozwiązanie: {best_solution.chromosome_value}\nWartość funkcji celu: {best_solution.fitness}\nCzas wykonania: {execution_time} sekund\n"
+            
+            self.save_results_to_file(results)
+        except Exception as e:
+            print(f"Błąd: {str(e)}")

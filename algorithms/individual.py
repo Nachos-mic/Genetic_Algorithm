@@ -1,40 +1,39 @@
+from algorithms.chromosome import Chromosome
+from algorithms.config import config
+import random
+
 class Individual:
-    def __init__(self, num_variables, bits_per_variable, precision=0, random_init=True):
-        """
-        Inicjalizacja osobnika z wieloma chromosomami (jeden na zmienną).
+    def __init__(self, num_variables=2, random_init=True):
+        self.num_variables = num_variables
+        self.chromosomes = [Chromosome(num_bits=config.precision, random_init=random_init) for _ in range(num_variables)]
+        self.fitness = float('inf')
+        self.chromosome_value = []  
         
-        Args:
-            num_variables: Liczba zmiennych (chromosomów)
-            bits_per_variable: Liczba bitów na zmienną
-            precision: Precyzja konwersji na wartość rzeczywistą
-            random_init: Czy inicjalizować chromosomy losowo
-        """
-        self.chromosomes = []
-        self.fitness = 0
-        
-        # Inicjalizacja chromosomów (jeden na zmienną)
-        for _ in range(num_variables):
-            self.chromosomes.append(Chromosome(bits_per_variable, precision, random_init))
-    
-    def evaluate(self, fitness_func, bounds):
-        """
-        Oblicz wartość funkcji przystosowania dla osobnika.
-        
-        Args:
-            fitness_func: Funkcja przystosowania
-            bounds: Lista krotek (min, max) dla każdej zmiennej
-        """
-        # Konwersja chromosomów na wartości rzeczywiste
-        values = [self.chromosomes[i].to_real_value(bounds[i][0], bounds[i][1]) 
-                 for i in range(len(self.chromosomes))]
-        
-        # Obliczenie przystosowania
-        self.fitness = fitness_func(values)
-        return self.fitness
-    
-    def mutate(self, mutation_rate=0.01):
-        """Zastosuj mutację do osobnika"""
+    def evaluate(self):
+        self.chromosome_value = []  
         for chromosome in self.chromosomes:
-            for i in range(chromosome.get_chromosome_len()):
-                if random.random() < mutation_rate:
-                    chromosome.change_chromosome_bit(i)
+            value = chromosome.decode(a=config.range_start, b=config.range_end)
+            self.chromosome_value.append(value)
+        
+        if len(self.chromosome_value) >= 2:
+            x1, x2 = self.chromosome_value[:2]
+            self.fitness = (x1 - x2)**2 + ((x1 + x2 - 10)/3)**2
+        else:
+            self.fitness = float('inf') 
+        
+        return self.fitness
+
+    def mutate(self, mutation_rate=0.3, method="one_point"):
+        """Mutacja wszystkich chromosomów"""
+        for chromosome in self.chromosomes:
+            if random.random() < mutation_rate:
+                position = random.randint(0, chromosome.num_bits - 1)
+                if method == "one_point":
+                    chromosome.mutate(position)
+                elif method == "two_point":
+                    position2 = random.randint(0, chromosome.num_bits - 1)
+                    chromosome.mutate(position)
+                    chromosome.mutate(position2)
+                elif method == "edge":
+                    chromosome.mutate(0) 
+                    chromosome.mutate(chromosome.num_bits - 1) 

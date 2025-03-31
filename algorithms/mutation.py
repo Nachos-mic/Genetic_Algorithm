@@ -1,7 +1,7 @@
 import random
 from algorithms.chromosome import Chromosome
 
-def boundary_mutation(chromosome: Chromosome, probability: float = 1) -> None:
+def edge_mutation(chromosome: Chromosome, probability: float = 1) -> None:
     if random.random() <= probability:
         chromosome.change_chromosome_bit(0)
         chromosome.change_chromosome_bit(chromosome.get_chromosome_len() - 1)
